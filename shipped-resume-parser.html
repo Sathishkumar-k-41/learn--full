@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shipped — Resume Parser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --paper: #f4f1ea;
+    --paper-2: #ebe6db;
+    --ink: #141414;
+    --ink-soft: #5b5850;
+    --line: #d6d0c2;
+    --accent: #ff5a1f;
+    --accent-soft: #ffe3d6;
+    --good: #1f8a4c;
+    --good-soft: #dcf1e3;
+    --bad: #c2362b;
+    --bad-soft: #fbe2df;
+    --card: #fffdf8;
+    --radius: 14px;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --serif: "Instrument Serif", Georgia, serif;
+    --sans: "Inter", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #121210; --paper-2: #1b1a17; --ink: #f2efe7; --ink-soft: #a29e93;
+      --line: #2f2d28; --card: #1a1916; --accent-soft: #3a1d10;
+      --good: #4cc77f; --good-soft: #15301f; --bad: #ff7b6e; --bad-soft: #3a1a17;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans); background: var(--paper); color: var(--ink);
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+    background-image: radial-gradient(var(--line) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  /* Nav */
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+  .logo-mark {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--ink); color: var(--paper);
+    display: grid; place-items: center; font-family: var(--mono); font-size: 17px;
+  }
+  .logo small { font-family: var(--mono); font-weight: 400; font-size: 11px; color: var(--ink-soft); margin-left: 4px; }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; color: var(--ink-soft); }
+  .nav-links a { color: inherit; text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+
+  /* Hero */
+  .hero { padding: 56px 0 36px; text-align: center; }
+  .stamp {
+    display: inline-block; font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); border: 1.5px dashed var(--accent);
+    padding: 5px 12px; border-radius: 6px; transform: rotate(-2deg); margin-bottom: 26px;
+  }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(44px, 7.5vw, 84px); line-height: 0.98; letter-spacing: -0.02em; }
+  h1 em { color: var(--accent); }
+  .lede { max-width: 560px; margin: 22px auto 0; font-size: 18px; color: var(--ink-soft); }
+
+  /* Upload card */
+  .tool {
+    margin: 44px auto 0; max-width: 760px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 20px; padding: 26px; box-shadow: 0 1px 0 var(--line), 0 24px 48px -28px rgba(0,0,0,.25);
+    text-align: left;
+  }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .row label { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+  select {
+    font: inherit; font-size: 14px; padding: 9px 34px 9px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color: var(--ink); appearance: none; cursor: pointer;
+  }
+  .drop {
+    border: 2px dashed var(--line); border-radius: var(--radius); padding: 44px 20px; text-align: center;
+    cursor: pointer; transition: border-color .2s, background .2s; background: var(--paper);
+  }
+  .drop:hover, .drop.drag { border-color: var(--accent); background: var(--accent-soft); }
+  .drop-icon {
+    width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 14px; background: var(--ink); color: var(--paper);
+    display: grid; place-items: center;
+  }
+  .drop strong { display: block; font-size: 17px; }
+  .drop span { font-size: 14px; color: var(--ink-soft); }
+  .drop .browse { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  input[type=file] { display: none; }
+  .hint { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); margin-top: 12px; text-align: center; }
+
+  /* Loading */
+  .loading { display: none; padding: 30px 6px; }
+  .loading.show { display: block; }
+  .file-chip {
+    display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px;
+    background: var(--paper); border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; margin-bottom: 20px;
+  }
+  .file-chip .pdf { background: var(--bad); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 6px; border-radius: 4px; }
+  .steps { list-style: none; display: grid; gap: 12px; }
+  .steps li { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--ink-soft); transition: color .2s; }
+  .steps li .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0; position: relative; }
+  .steps li.active { color: var(--ink); }
+  .steps li.active .dot { border-color: var(--accent); border-top-color: transparent; animation: spin .7s linear infinite; }
+  .steps li.done { color: var(--ink); }
+  .steps li.done .dot { background: var(--good); border-color: var(--good); }
+  .steps li.done .dot::after { content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Results */
+  .results { display: none; }
+  .results.show { display: block; animation: rise .5s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .result-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+  .result-head .file-chip { margin: 0; }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper); transition: transform .15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+
+  .score-panel { display: grid; grid-template-columns: 200px 1fr; gap: 28px; align-items: center; padding: 22px; border-radius: var(--radius); background: var(--paper); border: 1px solid var(--line); }
+  .ring { position: relative; width: 180px; height: 180px; margin: 0 auto; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .track { stroke: var(--line); }
+  .ring .bar { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1), stroke .3s; }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label b { font-family: var(--serif); font-weight: 400; font-size: 64px; line-height: 1; display: block; }
+  .ring-label small { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .verdict { font-family: var(--serif); font-size: 32px; line-height: 1.1; }
+  .verdict-sub { color: var(--ink-soft); margin: 8px 0 16px; font-size: 15px; }
+  .meters { display: grid; gap: 10px; }
+  .meter { font-size: 13px; }
+  .meter-top { display: flex; justify-content: space-between; margin-bottom: 4px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .meter-bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .meter-bar i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 99px; transition: width 1s ease; }
+
+  .skills { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .skill-box { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .skill-box h3 { display: flex; justify-content: space-between; align-items: center; font-size: 15px; margin-bottom: 14px; }
+  .count { font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 99px; }
+  .present .count { background: var(--good-soft); color: var(--good); }
+  .missing .count { background: var(--bad-soft); color: var(--bad); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 13px; font-weight: 500; padding: 6px 11px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; animation: rise .35s ease both; }
+  .present .chip { background: var(--good-soft); color: var(--good); }
+  .missing .chip { background: transparent; color: var(--bad); border: 1.5px dashed var(--bad); }
+  .empty { font-size: 13px; color: var(--ink-soft); font-style: italic; }
+  .demo-note { margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); text-align: center; }
+
+  /* Features */
+  section.block { padding: 90px 0 20px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 5vw, 52px); line-height: 1.05; letter-spacing: -0.01em; max-width: 620px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+  .feature .num { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .feature h4 { font-size: 18px; margin: 18px 0 8px; letter-spacing: -0.01em; }
+  .feature p { color: var(--ink-soft); font-size: 15px; }
+
+  .cta { margin: 90px 0 0; background: var(--ink); color: var(--paper); border-radius: 22px; padding: 56px 28px; text-align: center; }
+  .cta h2 { margin: 0 auto 22px; max-width: none; }
+  .cta .btn { background: var(--accent); border-color: var(--accent); color: #fff; font-size: 16px; padding: 14px 22px; }
+
+  footer { padding: 36px 0 44px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+
+  @media (max-width: 760px) {
+    .nav-links { display: none; }
+    .tool { padding: 18px; }
+    .score-panel { grid-template-columns: 1fr; text-align: center; }
+    .skills, .grid3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><div class="logo-mark">@</div>Shipped <small>resume parser</small></div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#tool">Try it</a>
+      <a href="#faq">Privacy</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="stamp">● Ready to ship</div>
+    <h1>Is your resume<br/><em>ready to ship?</em></h1>
+    <p class="lede">Drop in your PDF. Get a score, see which skills recruiters will find, and which ones they won't — in seconds.</p>
+
+    <div class="tool" id="tool">
+      <!-- Upload state -->
+      <div id="uploadView">
+        <div class="row">
+          <label for="role">Target role</label>
+          <select id="role">
+            <option value="frontend">Frontend Engineer</option>
+            <option value="backend">Backend Engineer</option>
+            <option value="data">Data Scientist</option>
+          </select>
+        </div>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Upload resume PDF">
+          <div class="drop-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>
+          </div>
+          <strong>Drop your resume here</strong>
+          <span>or <span class="browse">browse files</span> · PDF up to 10 MB</span>
+          <input type="file" id="file" accept="application/pdf,.pdf" />
+        </div>
+        <p class="hint">Parsed right in your browser — nothing is uploaded.</p>
+      </div>
+
+      <!-- Loading state -->
+      <div class="loading" id="loadingView">
+        <div class="file-chip"><span class="pdf">PDF</span><span class="fname"></span></div>
+        <ul class="steps" id="steps">
+          <li><span class="dot"></span>Reading PDF</li>
+          <li><span class="dot"></span>Extracting text</li>
+          <li><span class="dot"></span>Matching skills</li>
+          <li><span class="dot"></span>Calculating score</li>
+        </ul>
+      </div>
+
+      <!-- Results state -->
+      <div class="results" id="resultsView">
+        <div class="result-head">
+          <div class="file-chip"><span class="pdf">PDF</span><span class="fname"></span></div>
+          <button class="btn ghost" id="reset">↺ Try another</button>
+        </div>
+
+        <div class="score-panel">
+          <div class="ring">
+            <svg width="180" height="180" viewBox="0 0 180 180">
+              <circle class="track" cx="90" cy="90" r="78" fill="none" stroke-width="12"/>
+              <circle class="bar" id="ringBar" cx="90" cy="90" r="78" fill="none" stroke-width="12" stroke-dasharray="490" stroke-dashoffset="490"/>
+            </svg>
+            <div class="ring-label"><div><b id="scoreNum">0</b><small>/ 100</small></div></div>
+          </div>
+          <div>
+            <div class="verdict" id="verdict">—</div>
+            <p class="verdict-sub" id="verdictSub"></p>
+            <div class="meters">
+              <div class="meter"><div class="meter-top"><span>Skill match</span><span id="mSkillTxt">0%</span></div><div class="meter-bar"><i id="mSkill"></i></div></div>
+              <div class="meter"><div class="meter-top"><span>Sections found</span><span id="mSecTxt">0/4</span></div><div class="meter-bar"><i id="mSec"></i></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="skills">
+          <div class="skill-box present">
+            <h3>✓ Skills present <span class="count" id="presentCount">0</span></h3>
+            <div class="chips" id="presentList"></div>
+          </div>
+          <div class="skill-box missing">
+            <h3>✕ Skills missing <span class="count" id="missingCount">0</span></h3>
+            <div class="chips" id="missingList"></div>
+          </div>
+        </div>
+        <p class="demo-note" id="demoNote"></p>
+      </div>
+    </div>
+  </header>
+
+  <section class="block" id="how">
+    <div class="eyebrow">How it works</div>
+    <h2>Three steps from PDF to a clear verdict.</h2>
+    <div class="grid3">
+      <div class="feature"><div class="num">01 / Upload</div><h4>Drop your PDF</h4><p>Pick the role you're applying for and drop in your resume. No sign-up, no account.</p></div>
+      <div class="feature"><div class="num">02 / Parse</div><h4>We read every line</h4><p>Text is extracted and matched against the skills hiring teams search for in that role.</p></div>
+      <div class="feature"><div class="num">03 / Ship</div><h4>Fix the gaps</h4><p>See your score, what's already landing, and the exact skills to add before you hit send.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="eyebrow">Privacy</div>
+    <h2>Your resume never leaves your browser.</h2>
+    <div class="grid3">
+      <div class="feature"><div class="num">→</div><h4>Local parsing</h4><p>The PDF is read on your device. There's no server holding your data.</p></div>
+      <div class="feature"><div class="num">→</div><h4>No tracking</h4><p>No cookies, no accounts, nothing saved after you close the tab.</p></div>
+      <div class="feature"><div class="num">→</div><h4>Free to use</h4><p>Run as many versions as you like until your score is where you want it.</p></div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>Stop guessing. Start shipping.</h2>
+    <a href="#tool"><button class="btn">Score my resume →</button></a>
+  </div>
+
+  <footer>
+    <span>@ Shipped — resume parser</span>
+    <span>Mock design · © 2026</span>
+  </footer>
+</div>
+
+<script>
+  // ---------- Skill sets per role (name + regex aliases) ----------
+  const ROLES = {
+    frontend: [
+      ["JavaScript", /\bjavascript\b|\bes6\b/], ["TypeScript", /\btypescript\b/], ["React", /\breact(\.js|js)?\b/],
+      ["HTML", /\bhtml5?\b/], ["CSS", /\bcss3?\b|\bsass\b|\bscss\b/], ["Next.js", /\bnext(\.js|js)\b/],
+      ["Redux", /\bredux\b/], ["Tailwind", /\btailwind/], ["Jest / Testing", /\bjest\b|\bcypress\b|\bplaywright\b|testing library/],
+      ["Git", /\bgit(hub|lab)?\b/], ["REST APIs", /\brest(ful)?\b|\bapis?\b/], ["Accessibility", /accessibility|\ba11y\b|\bwcag\b/],
+      ["Webpack / Vite", /\bwebpack\b|\bvite\b/], ["Figma", /\bfigma\b/]
+    ],
+    backend: [
+      ["Python", /\bpython\b/], ["Java", /\bjava\b(?!script)/], ["Node.js", /\bnode(\.js|js)?\b/], ["SQL", /\bsql\b/],
+      ["PostgreSQL", /postgres/], ["MongoDB", /\bmongo(db)?\b/], ["Redis", /\bredis\b/], ["Docker", /\bdocker\b/],
+      ["Kubernetes", /\bkubernetes\b|\bk8s\b/], ["AWS", /\baws\b|amazon web services/], ["REST APIs", /\brest(ful)?\b|\bapis?\b/],
+      ["Microservices", /microservice/], ["CI/CD", /ci\/cd|\bjenkins\b|github actions|\bcircleci\b/], ["Git", /\bgit(hub|lab)?\b/]
+    ],
+    data: [
+      ["Python", /\bpython\b/], ["SQL", /\bsql\b/], ["Pandas", /\bpandas\b/], ["NumPy", /\bnumpy\b/],
+      ["Scikit-learn", /scikit|sklearn/], ["TensorFlow", /tensorflow/], ["PyTorch", /pytorch/],
+      ["Machine Learning", /machine learning|\bml\b/], ["Deep Learning", /deep learning|neural network/],
+      ["Statistics", /statistic/], ["Data Visualization", /visuali[sz]ation|matplotlib|seaborn|plotly/],
+      ["Tableau / Power BI", /tableau|power ?bi/], ["Spark", /\bspark\b|pyspark/], ["A/B Testing", /a\/b test/]
+    ]
+  };
+  const SECTIONS = [/experience|employment/, /education/, /projects?/, /skills/];
+
+  // ---------- Elements ----------
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), fileInput = $("file");
+  const views = { upload: $("uploadView"), loading: $("loadingView"), results: $("resultsView") };
+  const show = (name) => {
+    views.upload.style.display = name === "upload" ? "block" : "none";
+    views.loading.classList.toggle("show", name === "loading");
+    views.results.classList.toggle("show", name === "results");
+  };
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+
+  // ---------- Upload handlers ----------
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", e => handleFile(e.dataTransfer.files[0]));
+  fileInput.addEventListener("change", e => handleFile(e.target.files[0]));
+  $("reset").addEventListener("click", () => { fileInput.value = ""; show("upload"); });
+
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function handleFile(file) {
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Please upload a PDF file."); return;
+    }
+    document.querySelectorAll(".fname").forEach(el => el.textContent = file.name);
+    show("loading");
+    const steps = [...document.querySelectorAll("#steps li")];
+    steps.forEach(s => s.className = "");
+
+    const setStep = (i) => steps.forEach((s, j) => s.className = j < i ? "done" : j === i ? "active" : "");
+
+    setStep(0); await wait(450);
+    setStep(1);
+    let text = "";
+    try { text = await extractText(file); } catch (err) { text = ""; }
+    await wait(450);
+    setStep(2); await wait(500);
+    setStep(3); await wait(450);
+    setStep(4);
+    await wait(250);
+    render(analyze(text, $("role").value));
+  }
+
+  async function extractText(file) {
+    if (!window.pdfjsLib) return "";
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({
+      data: buf,
+      standardFontDataUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/"
+    }).promise;
+    let out = "";
+    for (let p = 1; p <= Math.min(pdf.numPages, 6); p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      out += content.items.map(i => i.str).join(" ") + "\n";
+    }
+    return out.toLowerCase();
+  }
+
+  // ---------- Scoring ----------
+  function analyze(text, role) {
+    const skills = ROLES[role];
+    let demo = false;
+    let present = [], missing = [], sections = 0;
+
+    if (text.trim().length > 40) {
+      skills.forEach(([name, re]) => (re.test(text) ? present : missing).push(name));
+      sections = SECTIONS.filter(re => re.test(text)).length;
+    } else {
+      // Fallback demo data (scanned PDF or no text layer)
+      demo = true;
+      const shuffled = [...skills].sort(() => Math.random() - 0.5);
+      const cut = Math.floor(skills.length * (0.45 + Math.random() * 0.3));
+      present = shuffled.slice(0, cut).map(s => s[0]);
+      missing = shuffled.slice(cut).map(s => s[0]);
+      sections = 3;
+    }
+    const skillPct = present.length / skills.length;
+    const score = Math.round(skillPct * 80 + (sections / SECTIONS.length) * 20);
+    return { score, present, missing, skillPct, sections, demo };
+  }
+
+  // ---------- Render ----------
+  function render({ score, present, missing, skillPct, sections, demo }) {
+    show("results");
+    const C = 2 * Math.PI * 78;
+    const bar = $("ringBar");
+    bar.style.strokeDasharray = C;
+    bar.style.strokeDashoffset = C;
+    bar.style.stroke = score >= 75 ? "var(--good)" : score >= 50 ? "var(--accent)" : "var(--bad)";
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.strokeDashoffset = C * (1 - score / 100); }));
+
+    // count-up
+    const num = $("scoreNum"); const start = performance.now();
+    (function tick(t) {
+      const k = Math.min((t - start) / 1100, 1);
+      num.textContent = Math.round(score * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(tick);
+    })(start);
+
+    const [v, sub] =
+      score >= 75 ? ["Ready to ship.", "Strong match — a few tweaks and you're out the door."] :
+      score >= 50 ? ["Almost there.", "Solid base. Add the missing skills you actually have."] :
+                    ["Needs work.", "Recruiters may skip this one. Start with the missing skills below."];
+    $("verdict").textContent = v;
+    $("verdictSub").textContent = sub;
+
+    $("mSkillTxt").textContent = Math.round(skillPct * 100) + "%";
+    $("mSecTxt").textContent = sections + "/" + SECTIONS.length;
+    setTimeout(() => {
+      $("mSkill").style.width = skillPct * 100 + "%";
+      $("mSec").style.width = (sections / SECTIONS.length) * 100 + "%";
+    }, 100);
+
+    const fill = (el, list, emptyMsg) => {
+      el.innerHTML = list.length
+        ? list.map((s, i) => `<span class="chip" style="animation-delay:${i * 40}ms">${s}</span>`).join("")
+        : `<span class="empty">${emptyMsg}</span>`;
+    };
+    fill($("presentList"), present, "No matching skills found.");
+    fill($("missingList"), missing, "Nothing missing — nice!");
+    $("presentCount").textContent = present.length;
+    $("missingCount").textContent = missing.length;
+    $("demoNote").textContent = demo
+      ? "Couldn't read text from this PDF (it may be scanned), so you're seeing sample results."
+      : "";
+  }
+</script>
+</body>
+</html>
