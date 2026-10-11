@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f5">
+  <meta name="description" content="Check a resume PDF in your browser and see an estimated score and skills breakdown with Shipped Resume Parser.">
+  <title>Shipped Resume Parser — Resume insights, at a glance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#" aria-label="Shipped Resume Parser home">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>shipped<span class="brand-accent">.</span></span>
+      </a>
+      <nav class="navigation" aria-label="Main navigation">
+        <a href="#upload">Resume check</a>
+        <a href="#how-it-works">How it works</a>
+      </nav>
+      <a class="button button-dark header-button" href="#upload">Try the demo <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div class="hero-content">
+        <p class="eyebrow"><span aria-hidden="true">✳</span> A CLEARER LOOK AT YOUR RESUME</p>
+        <h1>Your experience,<br>beautifully <span>in focus.</span></h1>
+        <p class="hero-copy">Upload a PDF to get an estimated resume score, see which skills we can find, and spot skills that may be missing. Your file is checked in your browser.</p>
+        <a class="button button-dark hero-button" href="#upload">Check your resume <span aria-hidden="true">↓</span></a>
+        <p class="privacy-note"><span aria-hidden="true">✦</span> Your resume stays on your device. No account needed.</p>
+      </div>
+      <div class="hero-note">
+        <span class="note-icon" aria-hidden="true">✳</span>
+        <p><strong>A little clarity goes a long way.</strong><br>Drop in a PDF to try the experience.</p>
+      </div>
+    </section>
+
+    <section class="workspace shell" id="upload" aria-labelledby="workspace-title">
+      <div class="workspace-heading">
+        <div>
+          <p class="eyebrow">YOUR PERSONAL REVIEW</p>
+          <h2 id="workspace-title">A better starting point.</h2>
+        </div>
+        <span class="demo-label"><span class="live-dot"></span> INTERACTIVE DEMO</span>
+      </div>
+
+      <div class="dashboard">
+        <section class="card upload-card" aria-labelledby="upload-title">
+          <div class="card-title-row">
+            <div>
+              <p class="card-kicker">01 / ADD YOUR RESUME</p>
+              <h3 id="upload-title">Let’s take a look.</h3>
+            </div>
+            <span class="round-icon" aria-hidden="true">↗</span>
+          </div>
+          <p class="card-description">Choose a PDF to check its text and find resume keywords.</p>
+
+          <div class="dropzone" id="dropzone" role="group" tabindex="0" aria-label="Choose or drop a PDF resume">
+            <input class="visually-hidden" id="file-input" type="file" accept=".pdf,application/pdf" aria-label="Choose a PDF resume">
+            <div class="upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none">
+                <path d="M14 5.5h13l9 9v27H14a4 4 0 0 1-4-4v-28a4 4 0 0 1 4-4Z"/>
+                <path d="M27 5.5v9h9M24 32V21m-4.5 4.5L24 21l4.5 4.5M18 37h12"/>
+              </svg>
+            </div>
+            <p class="dropzone-title">Drop your PDF right here</p>
+            <p class="dropzone-caption">or browse from your device</p>
+            <button class="button button-green" id="browse-button" type="button">Choose a PDF</button>
+            <p class="file-hint">PDF only <span>·</span> Up to 10 MB</p>
+          </div>
+
+          <p class="upload-status" id="upload-status" role="status" aria-live="polite">
+            <span class="status-icon" aria-hidden="true">i</span>
+            <span id="status-text">Your PDF is read in this browser and is not uploaded to a server.</span>
+          </p>
+        </section>
+
+        <section class="card results-card" aria-labelledby="results-title">
+          <div class="card-title-row">
+            <div>
+              <p class="card-kicker">02 / YOUR SNAPSHOT</p>
+              <h3 id="results-title">The highlights.</h3>
+            </div>
+            <span class="sample-label" id="analysis-state"><span class="live-dot"></span> WAITING FOR PDF</span>
+          </div>
+          <p class="file-name" id="file-name">Upload a PDF to see your results.</p>
+
+          <div class="score-card">
+            <div>
+              <p class="score-caption">ESTIMATED RESUME SCORE</p>
+              <p class="score"><span id="score-number">—</span><span class="score-total">/100</span></p>
+              <p class="score-message" id="score-message">Upload a PDF to calculate a score.</p>
+            </div>
+            <div class="score-ring" id="score-ring" role="img" aria-label="Resume score not available yet">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="ring-track" cx="60" cy="60" r="51"></circle>
+                <circle class="ring-value" id="ring-value" cx="60" cy="60" r="51"></circle>
+              </svg>
+              <span aria-hidden="true">✳</span>
+            </div>
+          </div>
+
+          <div class="metrics" aria-label="Sample skill summary">
+            <div class="metric"><span class="metric-icon found-icon" aria-hidden="true">✓</span><p><strong id="found-count">—</strong><span>Skills found</span></p></div>
+            <span class="metric-divider" aria-hidden="true"></span>
+            <div class="metric"><span class="metric-icon missing-icon" aria-hidden="true">+</span><p><strong id="missing-count">—</strong><span>Skills not found</span></p></div>
+            <span class="metric-divider" aria-hidden="true"></span>
+            <div class="metric"><p><strong class="keyword-score" id="keyword-match">—</strong><span>Keyword match</span></p></div>
+          </div>
+
+          <div class="skills-section">
+            <div class="skills-heading"><h4><span class="skill-mark found-mark" aria-hidden="true">✓</span> Skills found</h4><span id="found-caption">From your PDF</span></div>
+            <div class="skill-list found-skills" id="found-skills"></div>
+          </div>
+          <div class="skills-section missing-section">
+            <div class="skills-heading"><h4><span class="skill-mark missing-mark" aria-hidden="true">+</span> Skills not found</h4><span id="missing-caption">From our keyword list</span></div>
+            <div class="skill-list missing-skills" id="missing-skills"></div>
+          </div>
+        </section>
+      </div>
+      <p class="disclaimer">The score is an estimate based on common resume sections and a built-in technology skill list. Skills not found may still be relevant if described differently.</p>
+    </section>
+
+    <section class="how-section" id="how-it-works">
+      <div class="shell how-inner">
+        <div>
+          <p class="eyebrow">SIMPLE BY DESIGN</p>
+          <h2>A fresh perspective<br>starts here.</h2>
+          <p class="how-copy">A straightforward way to explore the building blocks of a resume review.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><span>01</span><h3>Choose your resume</h3><p>Select a PDF from your device or drop it into the upload area.</p></article>
+          <article class="step"><span>02</span><h3>Review your results</h3><p>See an estimated score, matched skills, and keywords not found.</p></article>
+          <article class="step"><span>03</span><h3>Plan your next step</h3><p>Use the keyword list as a starting point for your own review.</p></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <a class="brand footer-brand" href="#"><span class="brand-mark" aria-hidden="true">S</span><span>shipped<span class="brand-accent">.</span></span></a>
+      <p>Shipped Resume Parser <span>·</span> Your PDF stays in your browser. No backend connected.</p>
+      <a class="back-link" href="#upload">Back to the demo ↑</a>
+    </div>
+  </footer>
+</body>
+</html>
